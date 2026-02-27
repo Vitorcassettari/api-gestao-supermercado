@@ -1,0 +1,10 @@
+Flask
+PyMySQL
+flask-cors
+Werkzeug
+flask-jwt-extended
+python-dotenv
+requests
+rich
+cryptography
+gunicorn
