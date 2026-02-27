@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Supermercado</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+        .cabecalho { display: flex; justify-content: space-between; align-items: center; background: #333; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;}
+        .cabecalho h1 { margin: 0; font-size: 24px; }
+        
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin: 2px;}
+        .btn-sair { background: #dc3545; }
+        .btn-add { background: #28a745; width: 100%; padding: 10px; margin-top: 10px; transition: 0.3s;}
+        .btn-cancelar { background: #6c757d; width: 100%; padding: 10px; margin-top: 5px; display: none; }
+        .btn-editar { background: #ffc107; color: black; }
+        .btn-deletar { background: #dc3545; }
+        .btn-atualizar-tabela { background: #17a2b8; margin-bottom: 10px;}
+        
+        .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        h2 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        
+        input, select { width: 95%; padding: 8px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;}
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+    <div class="cabecalho">
+        <h1>🛠️ Painel Geral do Administrador</h1>
+        <button class="btn-sair" onclick="fazerLogout()">Sair (Logout)</button>
+    </div>
+
+    <div class="grid-container">
+        
+        <div class="card">
+            <h2 id="tituloFormulario">📦 Adicionar Produto</h2>
+            
+            <form id="formProduto" onsubmit="salvarProduto(event)">
+                
+                <input type="hidden" id="edit_id" value=""> 
+
+                <label>Nome do Produto:</label>
+                <input type="text" id="add_nome" required>
+
+                <label>Preço de Custo (R$):</label>
+                <input type="number" id="add_custo" step="0.01" required>
+
+                <label>Preço de Venda (R$):</label>
+                <input type="number" id="add_venda" step="0.01" required>
+
+                <label>Quantidade no Estoque:</label>
+                <input type="number" id="add_qtd" required>
+
+                <label>Categoria:</label>
+                <input type="text" id="add_cat" required>
+
+                <label>Ativo (Aparece na vitrine?):</label>
+                <select id="add_ativo">
+                    <option value="1">Sim</option>
+                    <option value="0">Não</option>
+                </select>
+
+                <button type="submit" id="btnSalvar" class="btn-add">➕ Cadastrar Produto</button>
+                <button type="button" id="btnCancelar" class="btn-cancelar" onclick="cancelarEdicao()">❌ Cancelar Edição</button>
+            </form>
+        </div>
+
+        <div>
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>📋 Gestão de Estoque</h2>
+                <button class="btn-atualizar-tabela" onclick="carregarEstoque()">🔄 Atualizar Estoque</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Nome</th><th>Venda</th><th>Qtd</th><th>Status</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaEstoque"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>👥 Gestão de Clientes</h2>
+                <button class="btn-atualizar-tabela" onclick="carregarClientes()">🔄 Atualizar Clientes</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Nome</th><th>Email</th><th>Permissão</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaClientes"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURAÇÕES INICIAIS E SEGURANÇA ---
+        const urlBase = 'http://127.0.0.1:5000';
+        const meuToken = localStorage.getItem('meu_token');
+        const minhaPermissao = localStorage.getItem('minha_permissao');
+        let estoqueGlobal = [];
+
+        if (!meuToken || minhaPermissao !== 'admin') {
+            alert('Acesso Negado! Área restrita para administradores.');
+            window.location.href = 'login.html';
+        }
+
+        const cabecalhoSeguranca = {
+            'Authorization': 'Bearer ' + meuToken,
+            'Content-Type': 'application/json'
+        };
+
+        // 🚨 O NOSSO NOVO "FISCAL DE SESSÃO" 🚨
+        // Ele verifica se a API devolveu o erro 401 (Token Expirado)
+        function checarSessao(response) {
+            if (response.status === 401) {
+                alert('⏳ Sua pulseira de acesso expirou por segurança! Por favor, faça login novamente.');
+                fazerLogout(); // Chama a função de sair (que apaga o token velho)
+                return true; // Retorna "true" indicando que a sessão expirou
+            }
+            return false; // Retorna "false" indicando que tá tudo OK
+        }
+
+        window.onload = () => {
+            carregarEstoque();
+            carregarClientes();
+        };
+
+        // --- 2. GESTÃO DE PRODUTOS ---
+        async function carregarEstoque() {
+            const response = await fetch(`${urlBase}/inventario`);
+            if (checarSessao(response)) return; // 🛑 Se expirou, PARA A FUNÇÃO AQUI!
+
+            const data = await response.json();
+            estoqueGlobal = data;
+            
+            const tbody = document.getElementById('tabelaEstoque');
+            tbody.innerHTML = '';
+
+            data.forEach(p => {
+                const status = p.ativo === 1 ? '🟢 Ativo' : '🔴 Inativo';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id_produto}</td>
+                        <td>${p.nome}</td>
+                        <td>R$ ${parseFloat(p.preco_venda).toFixed(2)}</td>
+                        <td>${p.quantidade_estoque}</td>
+                        <td>${status}</td>
+                        <td>
+                            <button class="btn-editar" onclick="prepararEdicao(${p.id_produto})">✏️</button>
+                            <button class="btn-deletar" onclick="deletarProduto(${p.id_produto})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function prepararEdicao(id) {
+            const produto = estoqueGlobal.find(p => p.id_produto === id);
+            if (produto) {
+                document.getElementById('edit_id').value = produto.id_produto;
+                document.getElementById('add_nome').value = produto.nome;
+                document.getElementById('add_custo').value = produto.preco_custo;
+                document.getElementById('add_venda').value = produto.preco_venda;
+                document.getElementById('add_qtd').value = produto.quantidade_estoque;
+                document.getElementById('add_cat').value = produto.categoria;
+                document.getElementById('add_ativo').value = produto.ativo;
+
+                document.getElementById('tituloFormulario').innerText = `✏️ Editando Produto ID ${id}`;
+                document.getElementById('btnSalvar').innerText = "💾 Salvar Alterações";
+                document.getElementById('btnSalvar').style.background = "#ffc107";
+                document.getElementById('btnSalvar').style.color = "black";
+                document.getElementById('btnCancelar').style.display = "block";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('formProduto').reset();
+            document.getElementById('edit_id').value = "";
+            document.getElementById('tituloFormulario').innerText = "📦 Adicionar Produto";
+            document.getElementById('btnSalvar').innerText = "➕ Cadastrar Produto";
+            document.getElementById('btnSalvar').style.background = "#28a745";
+            document.getElementById('btnSalvar').style.color = "white";
+            document.getElementById('btnCancelar').style.display = "none";
+        }
+
+        async function salvarProduto(event) {
+            event.preventDefault(); 
+            const idEditando = document.getElementById('edit_id').value;
+
+            const dados = {
+                nome: document.getElementById('add_nome').value,
+                preco_custo: parseFloat(document.getElementById('add_custo').value),
+                preco_venda: parseFloat(document.getElementById('add_venda').value),
+                quantidade_estoque: parseInt(document.getElementById('add_qtd').value),
+                categoria: document.getElementById('add_cat').value,
+                ativo: parseInt(document.getElementById('add_ativo').value)
+            };
+
+            const url = idEditando === "" ? `${urlBase}/inventario` : `${urlBase}/inventario/${idEditando}`;
+            const metodoHTTP = idEditando === "" ? 'POST' : 'PATCH';
+
+            const response = await fetch(url, {
+                method: metodoHTTP,
+                headers: cabecalhoSeguranca,
+                body: JSON.stringify(dados)
+            });
+
+            if (checarSessao(response)) return; // 🛑 O Fiscal entra em ação aqui também!
+
+            if (response.status === 200) {
+                alert(idEditando === "" ? 'Produto cadastrado com sucesso!' : 'Produto atualizado com sucesso!');
+                cancelarEdicao();
+                carregarEstoque();
+            } else {
+                const erro = await response.json();
+                alert('Erro: ' + (erro.erro || 'Falha na operação'));
+            }
+        }
+
+        async function deletarProduto(id) {
+            if (confirm(`Tem certeza que deseja APAGAR o produto ID ${id}?`)) {
+                const response = await fetch(`${urlBase}/inventario/${id}`, { method: 'DELETE', headers: cabecalhoSeguranca });
+                if (checarSessao(response)) return; // 🛑 Protegendo o Delete
+
+                if (response.status === 200) carregarEstoque();
+            }
+        }
+
+        // --- 3. GESTÃO DE CLIENTES ---
+        async function carregarClientes() {
+            const response = await fetch(`${urlBase}/clientes`, { headers: cabecalhoSeguranca });
+            if (checarSessao(response)) return; // 🛑 Protegendo a listagem de clientes
+
+            const data = await response.json();
+            const tbody = document.getElementById('tabelaClientes');
+            tbody.innerHTML = '';
+            data.forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${c.id}</td><td>${c.nome}</td><td>${c.email}</td><td>${c.permissoes}</td>
+                        <td>
+                            <button class="btn-editar" onclick="atualizarPermissaoCliente(${c.id}, '${c.permissoes}')">🔑</button>
+                            <button class="btn-deletar" onclick="deletarCliente(${c.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function deletarCliente(id) {
+            if (confirm(`ATENÇÃO: Deseja expulsar o cliente ID ${id} do sistema?`)) {
+                const response = await fetch(`${urlBase}/clientes/${id}`, { method: 'DELETE', headers: cabecalhoSeguranca });
+                if (checarSessao(response)) return; // 🛑 Protegendo o Delete de cliente
+
+                if (response.status === 200) carregarClientes();
+            }
+        }
+
+        async function atualizarPermissaoCliente(id, permissaoAtual) {
+            const novaPermissao = prompt(`A permissão atual é "${permissaoAtual}". Digite "admin" ou "user" para alterar:`);
+            if (novaPermissao === 'admin' || novaPermissao === 'user') {
+                const response = await fetch(`${urlBase}/clientes/${id}`, {
+                    method: 'PATCH', headers: cabecalhoSeguranca, body: JSON.stringify({ permissoes: novaPermissao })
+                });
+                
+                if (checarSessao(response)) return; // 🛑 Protegendo a edição de permissão
+
+                if (response.status === 200) carregarClientes();
+            }
+        }
+
+        // --- 4. LOGOUT ---
+        function fazerLogout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

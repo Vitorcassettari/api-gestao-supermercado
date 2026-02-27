@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitrine - Supermercado</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        
+        /* Cabeçalho bonitão */
+        .cabecalho { display: flex; justify-content: space-between; align-items: center; background: #17a2b8; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
+        .cabecalho h1 { margin: 0; font-size: 24px; }
+        
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-sair { background: #dc3545; }
+        .btn-sair:hover { background: #c82333; }
+
+        /* O truque do Grid para fazer a vitrine */
+        .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        
+        /* O design de cada produto (O Card) */
+        .card-produto { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s; }
+        .card-produto:hover { transform: translateY(-5px); } /* Efeito de pular ao passar o mouse */
+        
+        .categoria { font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; }
+        .nome { font-size: 20px; color: #333; margin: 10px 0; font-weight: bold; }
+        .preco { font-size: 24px; color: #28a745; font-weight: bold; margin-bottom: 10px; }
+        .estoque { font-size: 14px; color: #17a2b8; }
+        .esgotado { color: #dc3545; font-weight: bold; }
+
+        #mensagemErro { color: red; font-weight: bold; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="cabecalho">
+        <h1>🛒 Produtos Disponíveis</h1>
+        <button class="btn-sair" onclick="fazerLogout()">Sair (Logout)</button>
+    </div>
+
+    <div id="vitrine" class="vitrine">
+        <h2>Carregando vitrine...</h2>
+    </div>
+    
+    <div id="mensagemErro"></div>
+
+    <script>
+        // 1. Verificação de Segurança (Para ninguém entrar direto pelo link)
+        const meuToken = localStorage.getItem('meu_token');
+        if (!meuToken) {
+            alert('Você precisa fazer login primeiro!');
+            window.location.href = 'login.html';
+        }
+
+        // 2. A Mágica de buscar e desenhar os produtos
+        async function carregarVitrine() {
+            const vitrine = document.getElementById('vitrine');
+            const mensagemErro = document.getElementById('mensagemErro');
+            
+            try {
+                // Bate na rota da sua API para pegar o estoque
+                const response = await fetch('http://127.0.0.1:5000/inventario');
+                const data = await response.json();
+
+                if (response.status === 200) {
+                    vitrine.innerHTML = ''; // Limpa o "Carregando..."
+                    
+                    // O "for" do JavaScript passando por cada produto do banco
+                    data.forEach(produto => {
+                        
+                        // Ocultar da vitrine produtos que o admin marcou como inativos (ativo == 0)
+                        if (produto.ativo === 0) return; 
+
+                        // Formata o preço para ficar com R$ e duas casas decimais
+                        const precoFormatado = parseFloat(produto.preco_venda).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        
+                        // Verifica se tem no estoque
+                        const textoEstoque = produto.quantidade_estoque > 0 
+                            ? `<div class="estoque">Apenas ${produto.quantidade_estoque} em estoque!</div>` 
+                            : `<div class="esgotado">Esgotado</div>`;
+
+                        // Cria o HTML do Card injetando as variáveis (parecido com o f-string do Python)
+                        const card = `
+                            <div class="card-produto">
+                                <div class="categoria">${produto.categoria}</div>
+                                <div class="nome">${produto.nome}</div>
+                                <div class="preco">${precoFormatado}</div>
+                                ${textoEstoque}
+                            </div>
+                        `;
+                        
+                        // Joga o card na tela
+                        vitrine.innerHTML += card;
+                    });
+                } else {
+                    vitrine.innerHTML = '';
+                    mensagemErro.innerText = `Erro da API: Não foi possível carregar os produtos.`;
+                }
+            } catch (error) {
+                vitrine.innerHTML = '';
+                mensagemErro.innerText = 'Erro de conexão. O servidor Flask está ligado?';
+            }
+        }
+
+        // 3. Função de Logout
+        function fazerLogout() {
+            localStorage.removeItem('meu_token');
+            localStorage.removeItem('minha_permissao');
+            window.location.href = 'login.html';
+        }
+
+        // Chama a função assim que a tela abre
+        window.onload = carregarVitrine;
+    </script>
+</body>
+</html>
