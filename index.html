@@ -3,125 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Supermercado</title>
+    <title>Sistema de Gestão - Supermercado</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
-        .login-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #218838; }
-        #mensagem { margin-top: 15px; color: red; font-size: 14px; }
+        /* Esse estilo deixa o fundo cinza e a fonte bonita igual na sua foto */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+        .box h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .link-rodape {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .link-rodape a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link-rodape a:hover {
+            text-decoration: underline;
+        }
+        .mensagem-tela {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="login-box">
+    <div id="box-login" class="box">
         <h2>Acesso ao Sistema</h2>
-        <input type="email" id="email" placeholder="Digite seu email" required>
-        <input type="password" id="senha" placeholder="Digite sua senha" required>
-        <button onclick="fazerLogin()">Entrar</button>
-        <div id="mensagem"></div>
+        
+        <div>
+            <input type="email" id="email" placeholder="Digite seu email" required>
+            <input type="password" id="senha" placeholder="Digite sua senha" required>
+            <button type="button" onclick="fazerLogin()">Entrar</button>
+        </div>
+        
+        <p id="mensagem" class="mensagem-tela"></p>
+        
+        <p class="link-rodape">
+            Não tem cadastro? <a href="#" onclick="mostrarCadastro()">Cadastre-se</a>
+        </p>
     </div>
 
-    <div id="area-cadastro" style="margin-top: 40px; padding-top: 20px; border-top: 2px dashed #ccc;">
+
+    <div id="box-cadastro" class="box" style="display: none;">
         <h2>Criar Nova Conta</h2>
-    
-        <form id="form-cadastro">
-            <input type="text" id="cad-nome" placeholder="Seu Nome Completo" required><br><br>
-            <input type="email" id="cad-email" placeholder="Seu E-mail" required><br><br>
-            <input type="text" id="cad-cpf" placeholder="Seu CPF (Apenas números)" required><br><br>
-            <input type="password" id="cad-senha" placeholder="Crie uma Senha" required><br><br>
         
+        <form id="form-cadastro">
+            <input type="text" id="cad-nome" placeholder="Seu Nome Completo" required>
+            <input type="email" id="cad-email" placeholder="Seu E-mail" required>
+            <input type="text" id="cad-cpf" placeholder="Seu CPF (Apenas números)" required>
+            <input type="password" id="cad-senha" placeholder="Crie uma Senha" required>
+            
             <button type="submit">Cadastrar</button>
         </form>
-    
-        <p id="msg-cadastro" style="font-weight: bold; margin-top: 10px;"></p>
+        
+        <p id="msg-cadastro" class="mensagem-tela"></p>
+        
+        <p class="link-rodape">
+            Já tem uma conta? <a href="#" onclick="mostrarLogin()">Faça Login</a>
+        </p>
     </div>
 
+
     <script>
+        // --- 1. FUNÇÕES DE TROCAR TELA ---
+        function mostrarCadastro() {
+            document.getElementById('box-login').style.display = 'none';
+            document.getElementById('box-cadastro').style.display = 'block';
+        }
+
+        function mostrarLogin() {
+            document.getElementById('box-cadastro').style.display = 'none';
+            document.getElementById('box-login').style.display = 'block';
+        }
+
+        // --- 2. FUNÇÃO DE LOGIN ---
         async function fazerLogin() {
             const email = document.getElementById('email').value;
             const senha = document.getElementById('senha').value;
             const mensagem = document.getElementById('mensagem');
 
-        mensagem.style.color = 'blue';
-        mensagem.innerText = 'Conectando...';
+            mensagem.style.color = 'blue';
+            mensagem.innerText = '⏳ Conectando...';
 
-        try {
-            // 🚨 CORREÇÃO AQUI: Adicionado o /login no final da URL
-            const response = await fetch('https://api-gestao-supermercado.onrender.com/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, senha: senha })
-            });
+            try {
+                const response = await fetch('https://api-gestao-supermercado.onrender.com/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, senha: senha })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.status === 200) {
-                mensagem.style.color = 'green';
-                mensagem.innerText = data.msg;
+                if (response.status === 200) {
+                    mensagem.style.color = 'green';
+                    mensagem.innerText = '✅ ' + data.msg;
 
-                localStorage.setItem('meu_token', data.token);
-                localStorage.setItem('minha_permissao', data.permissoes);
+                    localStorage.setItem('meu_token', data.token);
+                    localStorage.setItem('minha_permissao', data.permissoes);
 
-                setTimeout(() => {
-                    if (data.permissoes === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else {
-                        window.location.href = 'usuario.html';
-                    }
-                }, 1000);
+                    setTimeout(() => {
+                        if (data.permissoes === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'usuario.html';
+                        }
+                    }, 1000);
 
-            } else {
+                } else {
+                    mensagem.style.color = 'red';
+                    mensagem.innerText = '❌ ' + (data.erro || 'Erro ao fazer login');
+                }
+            } catch (error) {
                 mensagem.style.color = 'red';
-                mensagem.innerText = data.erro || 'Erro ao fazer login';
+                mensagem.innerText = '❌ Erro ao conectar com a API. Ela está ligada?';
             }
-        } catch (error) {
-            mensagem.style.color = 'red';
-            mensagem.innerText = 'Erro ao conectar com a API. Ela está ligada?';
         }
-    }
 
-    // O resto do seu código de cadastro está perfeito!
-    document.getElementById('form-cadastro').addEventListener('submit', async (evento) => {
-        evento.preventDefault(); 
+        // --- 3. FUNÇÃO DE CADASTRO ---
+        document.getElementById('form-cadastro').addEventListener('submit', async (evento) => {
+            evento.preventDefault(); 
 
-        const nome = document.getElementById('cad-nome').value;
-        const email = document.getElementById('cad-email').value;
-        const cpf = document.getElementById('cad-cpf').value;
-        const senha = document.getElementById('cad-senha').value; 
+            const nome = document.getElementById('cad-nome').value;
+            const email = document.getElementById('cad-email').value;
+            const cpf = document.getElementById('cad-cpf').value;
+            const senha = document.getElementById('cad-senha').value; 
 
-        const dados = { nome, email, cpf, senha };
+            const dados = { nome, email, cpf, senha };
 
-        const mensagemTela = document.getElementById('msg-cadastro');
-        mensagemTela.innerText = "⏳ Cadastrando...";
-        mensagemTela.style.color = "blue";
+            const mensagemTela = document.getElementById('msg-cadastro');
+            mensagemTela.innerText = "⏳ Cadastrando...";
+            mensagemTela.style.color = "blue";
 
-        try {
-            const response = await fetch('https://api-gestao-supermercado.onrender.com/cadastro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
+            try {
+                const response = await fetch('https://api-gestao-supermercado.onrender.com/cadastro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
 
-            const resultado = await response.json();
+                const resultado = await response.json();
 
-            if (response.ok) { 
-                mensagemTela.innerText = "✅ " + resultado.msg;
-                mensagemTela.style.color = "green";
-                document.getElementById('form-cadastro').reset(); 
-            } else {
-                mensagemTela.innerText = "❌ " + resultado.erro;
+                if (response.ok) {
+                    mensagemTela.innerText = "✅ " + resultado.msg;
+                    mensagemTela.style.color = "green";
+                    document.getElementById('form-cadastro').reset(); 
+                    
+                    // Opcional: Joga a pessoa de volta pro login depois de 2 segundos
+                    setTimeout(() => {
+                        mostrarLogin();
+                        document.getElementById('email').value = email; // Já preenche o email pra ela
+                        mensagemTela.innerText = "";
+                    }, 2000);
+
+                } else {
+                    mensagemTela.innerText = "❌ " + (resultado.erro || "Erro ao cadastrar.");
+                    mensagemTela.style.color = "red";
+                }
+
+            } catch (erro) {
+                mensagemTela.innerText = "❌ Erro ao conectar com o servidor. A API está ligada?";
                 mensagemTela.style.color = "red";
             }
-
-        } catch (erro) {
-            mensagemTela.innerText = "❌ Erro ao conectar com o servidor. A API está ligada?";
-            mensagemTela.style.color = "red";
-        }
-    });
+        });
     </script>
+
 </body>
 </html>
+
 
 
