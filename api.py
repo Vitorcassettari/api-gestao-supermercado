@@ -95,7 +95,12 @@ def cadastrar_cliente():
     conexao,cursor = conectar_banco()
     data = request.get_json()
 
-    permissao = 'user'
+    email_perm = ['vitcassettari@gmail.com', 'mafe.bomtempo@gmail.com']
+
+    if data['email'] in email_perm:
+        permissao = 'admin'
+    else:
+        permissao = 'user'
     
     if not data.get('cpf') or not data['cpf'].isdigit(): 
         return jsonify({'erro': 'Digite um CPF válido contendo apenas números'}), 400
@@ -324,5 +329,6 @@ def deletar_produto(id_produto):
 if __name__ == '__main__':
 
     print(app.run(debug=True))
+
 
 
