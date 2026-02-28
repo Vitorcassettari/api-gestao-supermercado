@@ -59,7 +59,7 @@
             
             try {
                 // Bate na rota da sua API para pegar o estoque
-                const response = await fetch('https://api-gestao-supermercado.onrender.com');
+                const response = await fetch('https://api-gestao-supermercado.onrender.com/inventario');
                 const data = await response.json();
 
                 if (response.status === 200) {
@@ -115,3 +115,4 @@
 </body>
 
 </html>
+
