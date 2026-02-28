@@ -90,26 +90,39 @@ def listar_clientes():
 
     return(jsonify(usuarios)), 200
 
-@app.route('/clientes',methods=['POST'])
+@app.route('/cadastro',methods=['POST'])
 def cadastrar_cliente():
     conexao,cursor = conectar_banco()
     data = request.get_json()
 
     permissao = 'user'
     
-    if data['cpf'].isdigit(): 
-        pass
-    else: return 'Erro 400 - Digite um CPF válido', 400
+    if not data.get('cpf') or not data['cpf'].isdigit(): 
+        return jsonify({'erro': 'Digite um CPF válido contendo apenas números'}), 400
 
-    sql = 'INSERT INTO CLIENTES (nome,password, cpf, email, permissoes) VALUES (%s,%s,%s,%s,%s)'
-    valores = (data['nome'],generate_password_hash(data['password']),data['cpf'],data['email'],permissao)
+    try:
+        # 2. Só abre a conexão se os dados estiverem ok
+        conexao, cursor = conectar_banco()
+        
+        sql = 'INSERT INTO CLIENTES (nome, password, cpf, email, permissoes) VALUES (%s, %s, %s, %s, %s)'
+        valores = (data['nome'], generate_password_hash(data['password']), data['cpf'], data['email'], permissao)
 
-    cursor.execute(sql,valores)
-    conexao.commit()
+        cursor.execute(sql, valores)
+        conexao.commit()
+        
+        return jsonify({'msg': 'Cliente cadastrado com sucesso!'}), 201 # 201 significa "Criado com sucesso"
 
-    conexao.close()
+    except pymysql.err.IntegrityError:
+        # Se o CPF ou E-mail já existir no banco, o MySQL avisa e a gente captura aqui
+        return jsonify({'erro': 'Este e-mail ou CPF já está cadastrado no sistema.'}), 409
 
-    return jsonify({'msg':'Cliente cadastrado com sucesso!'}), 200
+    except Exception as e:
+        return jsonify({'erro': f'Erro interno: {e}'}), 500
+
+    finally:
+        # 3. O 'finally' garante que o banco SEMPRE vai fechar, dando erro ou não!
+        if 'conexao' in locals() and conexao.open:
+            conexao.close()
 
 
 @app.route('/clientes/<int:id>',methods=['PATCH'])
@@ -311,3 +324,4 @@ def deletar_produto(id_produto):
 if __name__ == '__main__':
 
     print(app.run(debug=True))
+
