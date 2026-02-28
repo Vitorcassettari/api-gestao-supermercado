@@ -104,7 +104,11 @@ def cadastrar_cliente():
     
     if not data.get('cpf') or not data['cpf'].isdigit(): 
         return jsonify({'erro': 'Digite um CPF válido contendo apenas números'}), 400
+    sql = 'SELECT id FROM CLIENTES WHERE EMAIL = %s;'
+    cursor.execute(sql, (data['email'],))
+    usuario_existente = cursor.fetchone()
 
+    if usuario_existente: return jsonify({'msg':'Esse email já está cadastrado'}), 400
     try:
         # 2. Só abre a conexão se os dados estiverem ok
         conexao, cursor = conectar_banco()
@@ -329,6 +333,7 @@ def deletar_produto(id_produto):
 if __name__ == '__main__':
 
     print(app.run(debug=True))
+
 
 
 
