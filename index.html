@@ -23,55 +23,105 @@
         <div id="mensagem"></div>
     </div>
 
+    <div id="area-cadastro" style="margin-top: 40px; padding-top: 20px; border-top: 2px dashed #ccc;">
+        <h2>Criar Nova Conta</h2>
+    
+        <form id="form-cadastro">
+            <input type="text" id="cad-nome" placeholder="Seu Nome Completo" required><br><br>
+            <input type="email" id="cad-email" placeholder="Seu E-mail" required><br><br>
+            <input type="text" id="cad-cpf" placeholder="Seu CPF (Apenas números)" required><br><br>
+            <input type="password" id="cad-senha" placeholder="Crie uma Senha" required><br><br>
+        
+            <button type="submit">Cadastrar</button>
+        </form>
+    
+        <p id="msg-cadastro" style="font-weight: bold; margin-top: 10px;"></p>
+    </div>
+
     <script>
         async function fazerLogin() {
-            // Pega o que o usuário digitou nas caixinhas
             const email = document.getElementById('email').value;
             const senha = document.getElementById('senha').value;
             const mensagem = document.getElementById('mensagem');
 
-            mensagem.style.color = 'blue';
-            mensagem.innerText = 'Conectando...';
+        mensagem.style.color = 'blue';
+        mensagem.innerText = 'Conectando...';
 
-            try {
-                // O fetch é o requests.post do JavaScript!
-                const response = await fetch('https://api-gestao-supermercado.onrender.com/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, senha: senha }) // Transforma em JSON
-                });
+        try {
+            // 🚨 CORREÇÃO AQUI: Adicionado o /login no final da URL
+            const response = await fetch('https://api-gestao-supermercado.onrender.com/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, senha: senha })
+            });
 
-                const data = await response.json(); // Lê a resposta da API
+            const data = await response.json();
 
-                if (response.status === 200) {
-                    mensagem.style.color = 'green';
-                    mensagem.innerText = data.msg;
+            if (response.status === 200) {
+                mensagem.style.color = 'green';
+                mensagem.innerText = data.msg;
 
-                    // 🟢 A MÁGICA: Guardando o Token e a Permissão no "bolso" do navegador!
-                    localStorage.setItem('meu_token', data.token);
-                    localStorage.setItem('minha_permissao', data.permissoes);
+                localStorage.setItem('meu_token', data.token);
+                localStorage.setItem('minha_permissao', data.permissoes);
 
-                    // Redireciona o usuário dependendo de quem ele é
-                    setTimeout(() => {
-                        if (data.permissoes === 'admin') {
-                            window.location.href = 'admin.html'; // Manda pro painel do chefe
-                        } else {
-                            window.location.href = 'usuario.html'; // Manda pra vitrine
-                        }
-                    }, 1000); // Espera 1 segundo e muda de página
+                setTimeout(() => {
+                    if (data.permissoes === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'usuario.html';
+                    }
+                }, 1000);
 
-                } else {
-                    mensagem.style.color = 'red';
-                    mensagem.innerText = data.erro || 'Erro ao fazer login';
-                }
-            } catch (error) {
+            } else {
                 mensagem.style.color = 'red';
-                mensagem.innerText = 'Erro ao conectar com a API. Ela está ligada?';
+                mensagem.innerText = data.erro || 'Erro ao fazer login';
             }
+        } catch (error) {
+            mensagem.style.color = 'red';
+            mensagem.innerText = 'Erro ao conectar com a API. Ela está ligada?';
         }
+    }
+
+    // O resto do seu código de cadastro está perfeito!
+    document.getElementById('form-cadastro').addEventListener('submit', async (evento) => {
+        evento.preventDefault(); 
+
+        const nome = document.getElementById('cad-nome').value;
+        const email = document.getElementById('cad-email').value;
+        const cpf = document.getElementById('cad-cpf').value;
+        const senha = document.getElementById('cad-senha').value; 
+
+        const dados = { nome, email, cpf, senha };
+
+        const mensagemTela = document.getElementById('msg-cadastro');
+        mensagemTela.innerText = "⏳ Cadastrando...";
+        mensagemTela.style.color = "blue";
+
+        try {
+            const response = await fetch('https://api-gestao-supermercado.onrender.com/cadastro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            const resultado = await response.json();
+
+            if (response.ok) { 
+                mensagemTela.innerText = "✅ " + resultado.msg;
+                mensagemTela.style.color = "green";
+                document.getElementById('form-cadastro').reset(); 
+            } else {
+                mensagemTela.innerText = "❌ " + resultado.erro;
+                mensagemTela.style.color = "red";
+            }
+
+        } catch (erro) {
+            mensagemTela.innerText = "❌ Erro ao conectar com o servidor. A API está ligada?";
+            mensagemTela.style.color = "red";
+        }
+    });
     </script>
 </body>
-
 </html>
 
 
