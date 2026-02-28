@@ -56,7 +56,7 @@ def verificar_login():
 
     data = request.get_json()
 
-    sql = 'SELECT id, password, permissoes FROM CLIENTES WHERE EMAIL = %s'
+    sql = 'SELECT id, senha, permissoes FROM CLIENTES WHERE EMAIL = %s'
     valores = (data['email'],)
 
     cursor.execute(sql, valores)
@@ -66,7 +66,7 @@ def verificar_login():
 
     if not resultado: return jsonify({'erro':'Email ou Senha incorretos'}),400
     else:
-        if check_password_hash(resultado['password'] ,data['password']): 
+        if check_password_hash(resultado['senha'] ,data['senha']): 
             meu_id = resultado['id']
             token_vip = create_access_token(identity=str(meu_id))
             return jsonify({
@@ -104,8 +104,8 @@ def cadastrar_cliente():
         # 2. Só abre a conexão se os dados estiverem ok
         conexao, cursor = conectar_banco()
         
-        sql = 'INSERT INTO CLIENTES (nome, password, cpf, email, permissoes) VALUES (%s, %s, %s, %s, %s)'
-        valores = (data['nome'], generate_password_hash(data['password']), data['cpf'], data['email'], permissao)
+        sql = 'INSERT INTO CLIENTES (nome, senha, cpf, email, permissoes) VALUES (%s, %s, %s, %s, %s)'
+        valores = (data['nome'], generate_password_hash(data['senha']), data['cpf'], data['email'], permissao)
 
         cursor.execute(sql, valores)
         conexao.commit()
@@ -148,9 +148,9 @@ def atualizar_cliente(id):
         campos.append('nome = %s')
         valores.append(data['nome'])
     
-    if 'password' in data:
-        campos.append('password = %s')
-        valores.append(generate_password_hash(data['password']))
+    if 'senha' in data:
+        campos.append('senha = %s')
+        valores.append(generate_password_hash(data['senha']))
 
     if 'cpf' in data:
         campos.append('cpf = %s')
@@ -324,4 +324,5 @@ def deletar_produto(id_produto):
 if __name__ == '__main__':
 
     print(app.run(debug=True))
+
 
