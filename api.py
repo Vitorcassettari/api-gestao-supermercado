@@ -22,7 +22,7 @@ config = {
     'password': os.getenv('db_password'),
     'database': os.getenv('db_name'),
     'cursorclass': pymysql.cursors.DictCursor,
-    'port': os.getenv('db_port'),
+    'port': int(os.getenv('db_port')),
     'ssl': {'ssl': {}}
 }
 
@@ -309,4 +309,5 @@ def deletar_produto(id_produto):
 
 
 if __name__ == '__main__':
+
     print(app.run(debug=True))
